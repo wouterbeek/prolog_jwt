@@ -15,19 +15,10 @@
 @version 2015/06
 */
 
-:- use_module(jwt_cmd).
-:- use_module(jwt_dec).
-:- use_module(jwt_enc).
+:- use_module(library(jwt/jwt_dec)).
+:- use_module(library(jwt/jwt_enc)).
 
 
-
-%! jwt_cmd_test(Name) is semidet.
-
-jwt_cmd_test(Name):-
-  jwt_test(Name, Header, Payload, Key),
-  jwt_cmd_enc(Header, Payload, Key, Token),
-  writeln(Token),
-  jwt_cmd_dec(Token, Key, Payload).
 
 
 
@@ -35,9 +26,20 @@ jwt_cmd_test(Name):-
 
 jwt_test(Name):-
   jwt_test(Name, Header, Payload, Key),
+  format(
+    user_output,
+    'Let\'s encode:\n  HEADER: ~w\n  PAYLOAD: ~w\n  KEY: ~w\n',
+    [Header,Payload,Key]
+  ),
   jwt_enc(Header, Payload, Key, Token),
-  writeln(Token),
-  jwt_dec(Token, Key, Payload).
+  format(user_output, 'Encoded as TOKEN:\t~w\n', [Token]),
+  jwt_dec(Token, Key, Payload0),
+  Payload :< Payload0,
+  format(
+    user_output,
+    'Successfully, decoded back to the original header, payload, and key.\n',
+    []
+  ).
 
 
 
@@ -50,11 +52,11 @@ jwt_test(
     alg: "none"
   },
   json{
-    exp: 1300819380,
+    exp: 13000819380,
     'http://example.com/is_root': true,
     iss: "joe"
   },
-  json{}
+  _
 ).
 jwt_test(
   test1,
@@ -68,20 +70,7 @@ jwt_test(
     iss: "joe"
   },
   json{
-    k: "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow",
+    k: "kq4HLmbjAsaN",
     kty: "oct"
   }
-).
-jwt_test(
-  test2,
-  json{
-    alg: "HS256",
-    typ: "JWT"
-  },
-  json{
-    admin: true,
-    sub: 1234567890,
-    name: "John Doe"
-  },
-  secret
 ).
