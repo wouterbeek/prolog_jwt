@@ -1,22 +1,30 @@
 **plJwt**
 =========
 
-A library that brings JSON Web Token (JWT) support
+A library bringing JSON Web Token (JWT) support
 to [SWI-Prolog](http://www.swi-prolog.org).
 
-JSON Web Token (JWT) is a compact claims representation format
+**JSON Web Token (JWT)** is a compact claims representation format
 intended for space constrained environments such as HTTP
 Authorization headers and URI query parameters.
-See [RFC 7519](https://tools.ietf.org/html/rfc7519)
+[RFC 7519](https://tools.ietf.org/html/rfc7519)
 
-JSON Web Signature (JWS) represents content secured with digital
-signatures or Message Authentication Codes (MACs) using JSON-based
-data structures. [RFC 7515]()
+Content is secured and signed by using a **JSON Web Signature (JWS)**.
+[RFC 7515](https://tools.ietf.org/html/rfc7515)
 
-Version 0.1.0.
+Cryptographic key can be specified a **JSON Web Key (JWK)**
+or as a **JWK Set**.
+[RFC 7517](https://tools.ietf.org/html/rfc7517)
 
-Licensed under the Lesser General Public License Vers. 3, June 2007,
-see license.txt
+Cryptographic algorithms and identifiers are drawn from
+the **JSON Web Algorithms (JWA)** collection.
+[RFC 7518](https://tools.ietf.org/html/rfc7518)
+
+This is version 0.1.0, created by [Wouter Beek](http://www.wouterbeek.com)
+in June 2015.
+
+This library is licensed under the Lesser General Public License Vers. 3,
+June 2007, see LICENSE.txt.
 
 
 
@@ -34,72 +42,34 @@ Other than having a normal SWI-Prolog install, the only installation step is to 
 Usage
 =====
 
-Encoding:
+Encoding usage
+--------------
 
 ```prolog
 ?- use_module(library(jwt/jwt_enc)).
-true.
-
 ?- jwt_enc(json{alg: "HS256", typ: "JWT"}, json{data: "data"}, json{k: "secret", kty: "oct"}, Token).
 Token = 'eyJhbGciOiJIUzI1NiIsICJ0eXAiOiJKV1QifQ.eyJkYXRhIjoiZGF0YSJ9.LOyFMl4_ntjclIDodouH50lRBSLhohtLwHuNBmWTxjI'.
 ```
 
-Decoding:
+Decoding usage
+--------------
 
 ```prolog
 ?- use_module(library(jwt/jwt_dec)).
-true.
-
 ?- jwt_dec($Token, json{k: "secret", kty: "oct"}, Payload).
 Payload = _G8726{data:"data"}.
 ```
 
 
-JSON Web Tokens (JWT)
-=====================
+Encoding API
+============
 
-The following headers are supported:
-  * **Audience (`aud`)**
-    Identifies the recipients that the JWT is intended for.
-    If present this should be `"SWI-Prolog"` or
-    should be a list containing `"SWI-Prolog"`.
-    This value is checked by Prolog as part of JWT decription.
-  
-  * **Issuer (`iss`)**
-    Identifies the principal that issued the JWT.
-    This value is set by Prolog as part of the JWT encription.
-  
-  * **Subject (`sub`)**
-    Identifies the principal that is the subject of the JWT.
-    The claims in a JWT are normally statements about the subject.
+```prolog
+jwt_enc(+Header:dict, +Payload:dict, ?Key, -Token:atom) is det.
+```
 
-  * **Expiration Time (`exp`)**
-    Identifies the expiration time on or after which the JWT MUST NOT
-    be accepted for processing.
-    This value is checked by Prolog as part of JWT decription.
-
-  * **Issued at (`iat`)**
-    Identifies the time at which the JWT was issued.
-    This claim can be used to determine the age of the JWT.
-    This value is set by Prolog as part of the JWT encription.
-
-  * **JWT ID (`jti`)**
-    Unique identifier for the JWT.
-
-  * **Not before (`nbf`)**
-    Identifies the time before which the JWT MUST NOT be accepted for
-    processing.
-    This value is checked by Prolog as part of JWT decription.
-
-
-
-JSON Web Signature (JWS)
-========================
-
-JSON Object Signing and Encryption (JOSE) Headers
--------------------------------------------------
-
-The following headers are supported:
+The JSON Object Signing and Encryption (JOSE) `Header` is
+a SWI7 dictionary for which the following claims are supported:
 
   * **Algorithm (`alg`)**
     Supported values:
@@ -134,16 +104,61 @@ The following headers are supported:
       JWS JSON Serialization or the JWE JSON Serialization.
     * `JWT` indicates that this is a JWT.
 
+`Payload` is a SWI7 dictionary that contains arbitrary JSON data
+but where the following claim names have a reserved meaning:
 
-
-JSON Web Key (JWK)
-==================
-
-A JSON Web Key (JWK) is a JavaScript Object Notation (JSON) data
-structure that represents a cryptographic key.
-
-Parameters:
+  * **Audience (`aud`)**
+    Identifies the recipients that the JWT is intended for.
+    If present this should be `"SWI-Prolog"` or
+    should be a list containing `"SWI-Prolog"`.
+    This value is checked by Prolog as part of JWT decription.
   
+  * **Issuer (`iss`)**
+    Identifies the principal that issued the JWT.
+    This value is set by Prolog as part of the JWT encription.
+  
+  * **Subject (`sub`)**
+    Identifies the principal that is the subject of the JWT.
+    The claims in a JWT are normally statements about the subject.
+
+  * **Expiration Time (`exp`)**
+    Identifies the expiration time on or after which the JWT MUST NOT
+    be accepted for processing.
+    This value is checked by Prolog as part of JWT decription.
+
+  * **Issued at (`iat`)**
+    Identifies the time at which the JWT was issued.
+    This claim can be used to determine the age of the JWT.
+    This value is set by Prolog as part of the JWT encription.
+
+  * **JWT ID (`jti`)**
+    Unique identifier for the JWT.
+
+  * **Not before (`nbf`)**
+    Identifies the time before which the JWT MUST NOT be accepted for
+    processing.
+    This value is checked by Prolog as part of JWT decription.
+
+The JSON Web Key (JWK) `Key` is either of the following:
+
+  * Uninstantiated, in case
+    * the JOSE `Header`'s `alg` parameter is set to `"none"`, or
+    * the JOSE `Header`'s parameter `jwk` specifies a public key.
+
+  * A JWK Set of private keys, in case the JOSE `Header`'s `kid` parameter
+    specifies a specific JWK.
+
+  * A JWK of a private key, in case the JOSE `Header` contains
+    no information about keys.
+
+A JWT Set is a SWI7 dictionary for which the following claim is supported:
+
+  * **Keys (`keys`)
+    An array of JWKs.
+
+A JSON Web Key (JWK) is a SWI7 dictionary for which
+the following claims are supported:
+
   * **Algorithm (`alg`)**
     The algorithm intended for use with the key.
     Supported values: `"HS256"`, `"HS384"`, `"HS512"`, `"none"`.
@@ -185,7 +200,7 @@ Parameters:
 Run tests
 =========
 
-The test are run in the following way:
+Test for this library are run in the following way:
 
 ```bash
 $ swipl test/jwt_test.pl

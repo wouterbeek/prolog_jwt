@@ -33,13 +33,6 @@
 
 
 %! jwt_dec(+Token:atom, ?Key, -Payload:dict) is det.
-% Key can be one of the following values:
-%   * Uninstantiated, in case the JOSE Header's `alg` parameter is `"none"`
-%     or the JOSE Header's parameter `jwk` specifies a public key.
-%   * A JWK Set of private keys, in case the JOSE Header's `kid` parameter
-%     specifies a specific JWK.
-%   * A JWK of a private key, in case the JOSE Header contains
-%     no information about keys.
 
 jwt_dec(Token, Key, Payload):-
   atomic_list_concat([HeaderEnc,PayloadEnc,_], '.', Token),
