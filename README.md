@@ -20,11 +20,15 @@ Cryptographic algorithms and identifiers are drawn from
 the **JSON Web Algorithms (JWA)** collection.
 [RFC 7518](https://tools.ietf.org/html/rfc7518)
 
-This is version 0.1.0, created by [Wouter Beek](http://www.wouterbeek.com)
+Version 0.1.0.
+
+Licensed under the Lesser General Public License Vers. 3,
+June 2007, see [LICENSE.txt].
+
+Created by [Wouter Beek](http://www.wouterbeek.com)
 in June 2015.
 
-This library is licensed under the Lesser General Public License Vers. 3,
-June 2007, see LICENSE.txt.
+
 
 
 
@@ -42,20 +46,22 @@ Other than having a normal SWI-Prolog install, the only installation step is to 
 Usage
 =====
 
-Encoding usage
---------------
+Encoding
+--------
 
 ```prolog
 ?- use_module(library(jwt/jwt_enc)).
+true.
 ?- jwt_enc(json{alg: "HS256", typ: "JWT"}, json{data: "data"}, json{k: "secret", kty: "oct"}, Token).
 Token = 'eyJhbGciOiJIUzI1NiIsICJ0eXAiOiJKV1QifQ.eyJkYXRhIjoiZGF0YSJ9.LOyFMl4_ntjclIDodouH50lRBSLhohtLwHuNBmWTxjI'.
 ```
 
-Decoding usage
---------------
+Decoding
+--------
 
 ```prolog
 ?- use_module(library(jwt/jwt_dec)).
+true.
 ?- jwt_dec($Token, json{k: "secret", kty: "oct"}, Payload).
 Payload = _G8726{data:"data"}.
 ```
@@ -67,6 +73,9 @@ Encoding API
 ```prolog
 jwt_enc(+Header:dict, +Payload:dict, ?Key, -Token:atom) is det.
 ```
+
+Argument `Header`
+-----------------
 
 The JSON Object Signing and Encryption (JOSE) `Header` is
 a SWI7 dictionary for which the following claims are supported:
@@ -104,6 +113,9 @@ a SWI7 dictionary for which the following claims are supported:
       JWS JSON Serialization or the JWE JSON Serialization.
     * `JWT` indicates that this is a JWT.
 
+Argument `Payload`
+------------------
+
 `Payload` is a SWI7 dictionary that contains arbitrary JSON data
 but where the following claim names have a reserved meaning:
 
@@ -138,6 +150,9 @@ but where the following claim names have a reserved meaning:
     Identifies the time before which the JWT MUST NOT be accepted for
     processing.
     This value is checked by Prolog as part of JWT decription.
+
+Argument `Key`
+--------------
 
 The JSON Web Key (JWK) `Key` is either of the following:
 
