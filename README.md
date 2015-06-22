@@ -59,7 +59,7 @@ JSON Web Tokens (JWT)
 =====================
 
 The following headers are supported:
-  * **Audience (`aud`)
+  * **Audience (`aud`)**
     Identifies the recipients that the JWT is intended for.
     If present this should be `"SWI-Prolog"` or
     should be a list containing `"SWI-Prolog"`.
@@ -78,15 +78,15 @@ The following headers are supported:
     be accepted for processing.
     This value is checked by Prolog as part of JWT decription.
 
-  * **Issued at (`iat`)
+  * **Issued at (`iat`)**
     Identifies the time at which the JWT was issued.
     This claim can be used to determine the age of the JWT.
     This value is set by Prolog as part of the JWT encription.
 
-  * **JWT ID (`jti`)
+  * **JWT ID (`jti`)**
     Unique identifier for the JWT.
 
-  * **Not before (`nbf`)
+  * **Not before (`nbf`)**
     Identifies the time before which the JWT MUST NOT be accepted for
     processing.
     This value is checked by Prolog as part of JWT decription.
@@ -108,10 +108,10 @@ The following headers are supported:
     * `"HS512"` for HMAC using SHA-512.
     * `"none"` for no digital signature or MAC performed.
 
-  * **Content type (`cty`)
+  * **Content type (`cty`)**
     Declares the media type of the secured content (the payload).
 
-  * **Critical (`crit`)
+  * **Critical (`crit`)**
     Indicates that extensions to this specification and/or JWA are being used
     that MUST be understood and processed.
     The value is an array listing the critical Header Parameter names.
@@ -144,7 +144,7 @@ structure that represents a cryptographic key.
 
 Parameters:
   
-  * **Algorithm (`alg`)
+  * **Algorithm (`alg`)**
     The algorithm intended for use with the key.
     Supported values: `"HS256"`, `"HS384"`, `"HS512"`, `"none"`.
   
@@ -152,7 +152,7 @@ Parameters:
     Used to match a specific key, e.g., to choose among a set of keys within
     a JWK Set during key rollover.
   
-  * **Key Operations (`key_ops`)
+  * **Key Operations (`key_ops`)**
     Identifies the operation(s) for which the key is intended to be used.
     Its value is an array of key operation values.
     Supported values:
