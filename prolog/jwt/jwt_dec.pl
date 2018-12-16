@@ -1,9 +1,8 @@
+:- encoding(utf8).
 :- module(
   jwt_dec,
   [
-    jwt_dec/3 % +Token:atom
-              % ?Key
-              % -Payload:dict
+    jwt_dec/3 % +Token, ?Key, -Payload
   ]
 ).
 
@@ -25,14 +24,15 @@
 :- use_module(library(apply)).
 :- use_module(library(base64)).
 :- use_module(library(http/json)).
-:- use_module(library(jwt/jwt_util)).
 :- use_module(library(sha)).
 
+:- use_module(library(jwt/jwt_util)).
 
 
 
 
-%! jwt_dec(+Token:atom, ?Key, -Payload:dict) is det.
+
+%! jwt_dec(+Token:atom, ?Key:dict, -Payload:dict) is semidet.
 
 jwt_dec(Token, Key, Payload):-
   atomic_list_concat([HeaderEnc,PayloadEnc,_], '.', Token),
@@ -43,37 +43,44 @@ jwt_dec(Token, Key, Payload):-
   atom_json_dict(PayloadDec, Payload),
   verify_payload(Payload).
 
+
+
 %! verify_audience(+Payload:dict) is semidet.
 
 verify_audience(Payload):-
-  Audience = Payload.get(aud),
+  get_dict(aud, Payload, Audience),
   (   is_list(Audience)
   ->  \+ memberchk("SWI-Prolog", Audience)
   ;   Audience \== "SWI-Prolog"
   ), !,
-  format(user_error, 'SWI-Prolog does not belong to the audience.', []),
+  print_message(warning, format("SWI-Prolog does not belong to the audience (aud).")),
   fail.
 verify_audience(_).
+
+
 
 %! verify_expiration_time(+Payload:dict) is semidet.
 
 verify_expiration_time(Payload):-
-  ExpirationTime = Payload.get(exp),
   get_time(Now),
-  ExpirationTime =< Now, !,
-  format(user_error, 'Expiration time has exceeded.', []),
+  Payload.exp =< Now, !,
+  print_message(warning, format("Expiration time (exp) has exceeded.")),
   fail.
 verify_expiration_time(_).
+
+
 
 %! verify_not_before(+Payload:dict) is semidet.
 
 verify_not_before(Payload):-
-  NotBefore = Payload.get(nbf),
+  get_dict(nbf, Payload, NotBefore),
   get_time(Now),
   Now < NotBefore, !,
-  format(user_error, 'Not before claim was not met.', []),
+  print_message(warning, format("The ‘Not Before’ claim (nbf) was not met.")),
   fail.
 verify_not_before(_).
+
+
 
 %! verify_payload(+Payload:dict) is semidet.
 
@@ -82,14 +89,17 @@ verify_payload(Payload):-
   verify_expiration_time(Payload),
   verify_not_before(Payload).
 
-%! verify_signature(+Header:dict, ?Key, +Token:atom) is semidet.
+
+
+%! verify_signature(+Header:dict, +Key, +Token:atom) is semidet.
+%! verify_signature(+Header:dict, -Key, +Token:atom) is semidet.
 
 verify_signature(Header, _, _):-
   Header.alg == "none", !.
 verify_signature(Header, Key, Token):-
-  hmac_algorithm(Header.alg, Alg), !,
-  atomic_list_concat([HeaderEnc,PayloadEnc,SignatureEnc], '.', Token),
-  atomic_list_concat([HeaderEnc,PayloadEnc], '.', SignWith),
+  hmac_algorithm_name(Header.alg, Alg), !,
+  atomic_list_concat([HeaderEnc,PayloadEnc,SignatureEnc], ., Token),
+  atomic_list_concat([HeaderEnc,PayloadEnc], ., SignWith),
   interpret_key(Header, Key, Secret),
   hmac_sha(Secret, SignWith, Hash, [algorithm(Alg)]),
   atom_codes(SignatureDec, Hash),

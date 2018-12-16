@@ -1,0 +1,290 @@
+#+TITLE: prolog_jwt
+#+AUTHOR: Wouter Beek
+
+A library bringing JSON Web Token (JWT) support to [[http://www.swi-prolog.org][SWI-Prolog]].
+
+/JSON Web Token/ (JWT) is a compact claims representation format
+intended for space-constrained environments such as HTTP Authorization
+headers and URI query parameters, see [[https://tools.ietf.org/html/rfc7519][RFC 7519]].
+
+Content is secured and signed by using a /JSON Web Signature/ (JWS),
+see [[https://tools.ietf.org/html/rfc7515][RFC 7515]].
+
+A cryptographic key can be specified as a /JSON Web Key/ (JWK) or as a
+/JWK Set/, see [[https://tools.ietf.org/html/rfc7517][RFC 7517]].
+
+Cryptographic algorithms and identifiers are drawn from the /JSON Web
+Algorithms/ (JWA) collection, see [[https://tools.ietf.org/html/rfc7518][RFC 7518]].
+
+This library was created by [[http://www.wouterbeek.com][Wouter Beek]] in June 2015.
+
+* Installation
+
+  1. Install [[http://www.swi-prolog.org][SWI-Prolog]].
+  2. Clone this repository: ~git clone
+     https://github.com/wouterbeek/prolog_jwt~
+  3. Add the following line to your ~.swiplrc~ file:
+
+#+BEGIN_SRC
+user:file_search_path(library, '/your/path/to/prolog_jwt/prolog').
+#+END_SRC
+
+* Usage
+
+After [[Installation]], the libraries can be used as follows:
+
+** Encoding
+
+#+BEGIN_SRC prolog
+?- use_module(library(jwt/jwt_enc)).
+true.
+?- jwt_enc(json{alg: "HS256", typ: "JWT"}, json{data: "data"}, json{k: "secret", kty: "oct"}, Token).
+Token = 'eyJhbGciOiJIUzI1NiIsICJ0eXAiOiJKV1QifQ.eyJkYXRhIjoiZGF0YSJ9.LOyFMl4_ntjclIDodouH50lRBSLhohtLwHuNBmWTxjI'.
+#+END_SRC
+
+** Decoding
+
+#+BEGIN_SRC prolog
+?- use_module(library(jwt/jwt_dec)).
+true.
+?- jwt_dec($Token, json{k: "secret", kty: "oct"}, Payload).
+Payload = _G8726{data:"data"}.
+#+END_SRC
+
+** Encoding API
+
+The encoding API consists of the following predicate.
+
+#+BEGIN_SRC prolog
+%! jwt_enc(+Header:dict, +Payload:dict, ?Key, -Token:atom) is det.
+#+END_SRC
+
+The following sections describe the arguments of this predicate:
+
+*** ~Header~ argument
+
+The /JSON Object Signing and Encryption/ (JOSE) ~Header~ is a
+dictionary that must be instantiated.
+
+Two examples of valid values for ~Header~:
+
+#+BEGIN_SRC prolog
+json{alg: "none"}
+json{alg: "HS256", typ: "JWT"}
+#+END_SRC
+
+The following dictionary keys are supported for specifying header
+claims:
+
+**** ~alg~
+
+Sets the encoding algorithm that is used.  The following values are
+supported:
+
+  - ~"HS256"~ for HMAC using SHA-256.
+  - ~"HS384"~ for HMAC using SHA-384.
+  - ~"HS512"~ for HMAC using SHA-512.
+  - ~"none"~ for no digital signature or MAC.
+
+**** ~cty~
+
+Declares the content type (Media Type) of the secured content
+(payload).
+
+**** ~crit~
+
+Indicates that extensions to this specification and/or JWA are being
+used that MUST be understood and processed.  The value is an array
+listing the critical Header Parameter names.
+
+**** ~jwk~
+
+The public JSON Web Key that is used to digitally sign the JWS.
+
+**** ~kid~
+
+A key identifier, giving a hint as to which key was used to secure the
+JWS.  When used with a JWK, the ~kid~ value is used to match a JWK
+~kid~ value.
+
+**** ~typ~
+
+Declares the Media Type of the complete JWS.  It is recommended to
+omit the ~application/~ prefix if no further forward slash appears
+in the Media Type.  The following values are supported:
+
+  - ~JOSE~
+
+    Indicates that this is a JWS or JWE using the /JWS Compact
+    Serialization/ or the /JWE Compact Serialization/.
+
+  - ~JOSE+JSON~
+
+    Indicates that this is a JWS or JWE using the /JWS JSON
+    Serialization/ or the /JWE JSON Serialization/.
+
+  - ~JWT~
+
+    Indicates that this is a JWT.
+
+*** ~Payload~ argument
+
+The ~Payload~ is a dictionary that contains arbitrary JSON data,
+except for a limited set of key names that are reserved for specifying
+payload claims.
+
+Two examples of valid values for ~Payload~:
+
+#+BEGIN_SRC prolog
+json{exp: 13000819380, 'https://example.com/is_root': true, iss: "joe"}
+json{exp: 2300819380, 'https://example.com/is_root': true, iss: "joe"}
+#+END_SRC
+
+The following dictionary keys are reserved for expressing payload
+claims:
+
+**** ~aud~
+
+Identifies the recipients (audience) that the JWT is intended for.  If
+present this should be ~"SWI-Prolog"~ or should be a list containing
+~"SWI-Prolog"~.  This value is checked by Prolog as part of JWT
+decryption.
+
+**** ~iss~
+
+Identifies the issuer of the JWT.  This value is set by Prolog as part
+of the JWT encryption.
+
+**** ~sub~
+
+Identifies the subject of the JWT.  The claims in a JWT are normally
+statements about the subject.
+
+**** ~exp~
+
+Identifies the expiration time on or after which the JWT MUST NOT be
+accepted for processing.  This value is checked by Prolog as part of
+JWT decryption.
+
+**** ~iat~
+
+Identifies the time at which the JWT was issued.  This claim can be
+used to determine the age of the JWT.  This value is set by Prolog as
+part of the JWT encryption.
+
+**** ~jti~
+
+A unique identifier for the JWT.
+
+**** ~nbf~
+
+Identifies the time before which the JWT MUST NOT be accepted for
+processing.  This value is checked by Prolog as part of JWT
+decryption.
+
+*** ~Key~ argument
+
+The JWK ~Key~ is either of the following:
+
+  - Uninstantiated, in case:
+
+    - the JOSE ~Header~'s parameter ~alg~ is set to ~"none"~, or
+    - the JOSE ~Header~'s parameter ~jwk~ specifies a public key.
+
+  - A JWK Set of private keys, in case the JOSE ~Header~'s parameter
+    ~kid~ specifies a specific JWK.
+
+    A JWT Set is a dictionary for which the claim ~keys~ is supported,
+    which specifies an array of JWKs.  See [[JWK representation]] for how
+    the individual JWKs should be represented.
+
+  - A JWK of a private key, in case the JOSE ~Header~ contains no
+    information about keys.  See [[JWK representation]] for how a JWK can
+    be represented.
+
+**** JWK representation
+
+A JWK is represented by a dictionary for which the following claims
+are supported:
+
+***** ~alg~
+
+The algorithm that is intended to be used with the key.  The currently
+supported values are ~"HS256"~, ~"HS384"~, ~"HS512"~, and ~"none"~.
+
+***** ~kid~
+
+The key identifier.  This can be used to match a specific key.  For
+example, this can be used to choose from a set of keys within a JWK
+Set during key rollover.
+
+***** ~key_ops~
+
+Identifies the operations for which the key is intended to be used.
+The value is an array of key operation names.  The following key
+operation names are supported:
+
+  -  ~"sign"~
+
+     Compute a digital signature or MAC.
+
+  -  ~"verify"~
+
+     Verify a digital signature or MAC.
+
+  -  ~"encrypt"~
+
+     Encrypt content.
+
+  -  ~"decrypt"~
+
+     Decrypt content and validate decryption, if applicable.
+
+  -  ~"wrapKey"~
+
+     Encrypt a key.
+
+  -  ~"unwrapKey"~
+
+     Decrypt a key and validate decryption, if applicable.
+
+  -  ~"deriveKey"~
+
+     Derive a key.
+
+  -  ~"deriveBits"~
+
+     Derive bits that SHOULD NOT be used as a key.
+
+***** ~kty~
+
+Identifies the cryptographic algorithm family that is used for the
+key.  This claim is REQUIRED.  The following values are supported:
+
+  - ~"oct"~ for octet sequences (used to represent symmetric keys).
+
+***** ~k~
+
+The value of the symmetric (or other single-valued) key.  Represented
+as the ~base64url~ encoding of the octet sequence containing the key
+value.
+
+***** ~use~
+
+Identifies the intended use of the public key.  The following values are supported:
+
+  - ~enc~
+
+    data encryption
+
+  - ~sig~
+
+    signature verification
+
+* Run tests
+
+The tests for this library can be run in the following way:
+
+#+BEGIN_SRC sh
+$ swipl -s test/test_jwt.pl -g run_tests -t halt
+#+END_SRC
